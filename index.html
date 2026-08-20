@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PWR-01 :: Power Monitoring Terminal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">P1</div>
+      <div class="titles">
+        <h1>Power Monitoring Terminal</h1>
+        <span>UNIT PWR-01 &nbsp;/&nbsp; ESP32 TRAINER NODE</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="clock" id="last-update">--:--:--</span>
+      <span class="pill pill-bad" id="conn-status">CONNECTING</span>
+    </div>
+  </div>
+
+  <main>
+    <div class="gauge-row">
+      <div class="panel">
+        <div class="panel-head"><span class="label">Tegangan</span><span class="tag">CH.01 &middot; 0&ndash;500V</span></div>
+        <div class="gauge v">
+          <svg viewBox="0 0 200 130">
+            <path d="M 30 110 A 70 70 0 1 1 170 110" fill="none" stroke="#2b3530" stroke-width="10" stroke-linecap="round"/>
+            <path d="M 30 110 A 70 70 0 1 1 170 110" fill="none" stroke="#ffb02e" stroke-width="10" stroke-linecap="round" stroke-dasharray="220 440" opacity="0.35"/>
+            <g id="needle-v" transform="rotate(-120 100 100)">
+              <line x1="100" y1="100" x2="100" y2="40" stroke="#ffb02e" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="100" cy="100" r="6" fill="#ffb02e"/>
+            </g>
+          </svg>
+          <div class="reading"><span class="num" id="v-value">0.0</span> <span class="unit">VOLT</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="label">Arus</span><span class="tag">CH.02 &middot; 0&ndash;30A</span></div>
+        <div class="gauge a">
+          <svg viewBox="0 0 200 130">
+            <path d="M 30 110 A 70 70 0 1 1 170 110" fill="none" stroke="#2b3530" stroke-width="10" stroke-linecap="round"/>
+            <path d="M 30 110 A 70 70 0 1 1 170 110" fill="none" stroke="#5fd4c8" stroke-width="10" stroke-linecap="round" stroke-dasharray="220 440" opacity="0.35"/>
+            <g id="needle-a" transform="rotate(-120 100 100)">
+              <line x1="100" y1="100" x2="100" y2="40" stroke="#5fd4c8" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="100" cy="100" r="6" fill="#5fd4c8"/>
+            </g>
+          </svg>
+          <div class="reading"><span class="num" id="a-value">0.00</span> <span class="unit">AMPERE</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="label">Daya</span><span class="tag">CH.03 &middot; 0&ndash;5000W</span></div>
+        <div class="gauge w">
+          <svg viewBox="0 0 200 130">
+            <path d="M 30 110 A 70 70 0 1 1 170 110" fill="none" stroke="#2b3530" stroke-width="10" stroke-linecap="round"/>
+            <path d="M 30 110 A 70 70 0 1 1 170 110" fill="none" stroke="#ff8f5c" stroke-width="10" stroke-linecap="round" stroke-dasharray="220 440" opacity="0.35"/>
+            <g id="needle-w" transform="rotate(-120 100 100)">
+              <line x1="100" y1="100" x2="100" y2="40" stroke="#ff8f5c" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="100" cy="100" r="6" fill="#ff8f5c"/>
+            </g>
+          </svg>
+          <div class="reading"><span class="num" id="w-value">0</span> <span class="unit">WATT</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lower-grid">
+      <div class="panel trend-panel">
+        <div class="panel-head"><span class="label">Tren Daya</span><span class="tag">40 SAMPEL TERAKHIR</span></div>
+        <canvas id="trend"></canvas>
+        <div class="trend-legend"><span><i class="swatch"></i> Daya (W)</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="label">Ringkasan</span><span class="tag">SESI INI</span></div>
+        <div class="stat-block">
+          <div class="stat-line"><span class="k">Energi Terpakai</span><span class="v" id="kwh-value">0.0000</span></div>
+          <div class="stat-line"><span class="k">Satuan</span><span class="v" style="font-size:13px;color:var(--text-dim)">kWh</span></div>
+          <div class="stat-line"><span class="k">Sumber Data</span><span class="v" style="font-size:13px;color:var(--text-dim)">Firebase RTDB</span></div>
+          <div class="stat-line"><span class="k">Node</span><span class="v" style="font-size:13px;color:var(--text-dim)">ESP32-PWR01</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel log-panel">
+      <div class="panel-head"><span class="label">Log Pembacaan</span><span class="tag">TERBARU DI ATAS</span></div>
+      <table>
+        <thead><tr><th>Waktu</th><th>Tegangan</th><th>Arus</th><th>Daya</th></tr></thead>
+        <tbody id="log-body"><tr><td colspan="4" style="color:var(--text-dim)">Menunggu data...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="footer-note">PWR-01 TERMINAL &middot; DATA DISINKRONKAN LANGSUNG DARI FIREBASE &middot; DAPAT DIAKSES DARI MANA SAJA</div>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
