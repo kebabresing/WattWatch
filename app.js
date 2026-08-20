@@ -7,7 +7,6 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const currentRef = ref(db, "monitorDaya/current");
-const historyRef = query(ref(db, "monitorDaya/history"), limitToLast(40));
 
 const els = {
   v: document.getElementById("v-value"),
@@ -59,53 +58,64 @@ onValue(currentRef, (snap) => {
   }
   lastTick = now;
 
-  els.lastUpdate.textContent = new Date().toLocaleTimeString('id-ID', { hour12: false });
+  const timeStr = new Date().toLocaleTimeString('id-ID', { hour12: false });
+  els.lastUpdate.textContent = timeStr;
+
+  // Local History untuk Chart & Table
+  trendData.push({ x: timeStr, y: d.daya });
+  if (trendData.length > 40) trendData.shift();
+  if (chart) chart.updateSeries([{ data: trendData }]);
+
+  logRows.unshift({ time: timeStr, v: d.tegangan, a: d.arus, w: d.daya });
+  if (logRows.length > 12) logRows.pop();
+  els.logBody.innerHTML = logRows.map(r => `
+    <tr>
+      <td>${r.time}</td>
+      <td>${fmt(r.v, 1)} V</td>
+      <td>${fmt(r.a, 2)} A</td>
+      <td>${fmt(r.w, 0)} W</td>
+    </tr>`).join("");
+
 }, () => markConnected(false));
 
-onValue(historyRef, (snap) => {
-  const rows = [];
-  snap.forEach(child => rows.push(child.val()));
-  rows.reverse();
-  els.logBody.innerHTML = rows.slice(0, 12).map(r => `
-    <tr>
-      <td>${new Date().toLocaleTimeString('id-ID', { hour12: false })}</td>
-      <td>${fmt(r.tegangan, 1)} V</td>
-      <td>${fmt(r.arus, 2)} A</td>
-      <td>${fmt(r.daya, 0)} W</td>
-    </tr>`).join("");
-  drawTrend(rows);
-});
+let trendData = [];
+let logRows = [];
+let chart;
 
-function drawTrend(rows) {
-  const canvas = document.getElementById("trend");
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width = canvas.clientWidth * devicePixelRatio;
-  const h = canvas.height = canvas.clientHeight * devicePixelRatio;
-  ctx.clearRect(0, 0, w, h);
-  if (rows.length < 2) return;
+const chartOptions = {
+  series: [{ name: 'Daya (W)', data: [] }],
+  chart: {
+    type: 'area', height: '100%',
+    animations: { enabled: true, easing: 'linear', dynamicAnimation: { speed: 1000 } },
+    toolbar: { show: false }, zoom: { enabled: false },
+    background: 'transparent'
+  },
+  colors: ['#ffb02e'],
+  fill: {
+    type: 'gradient',
+    gradient: { shadeIntensity: 1, opacityFrom: 0.8, opacityTo: 0.1, stops: [0, 90, 100] }
+  },
+  dataLabels: { enabled: false },
+  stroke: { curve: 'smooth', width: 3 },
+  grid: {
+    borderColor: 'rgba(255,255,255,0.05)', strokeDashArray: 4,
+    xaxis: { lines: { show: true } }, yaxis: { lines: { show: true } },
+    padding: { top: 0, right: 0, bottom: 0, left: 10 }
+  },
+  xaxis: {
+    type: 'category',
+    labels: { show: false },
+    tooltip: { enabled: false },
+    axisBorder: { show: false },
+    axisTicks: { show: false }
+  },
+  yaxis: {
+    labels: { style: { colors: '#7c8b83', fontFamily: 'JetBrains Mono' } }
+  },
+  theme: { mode: 'dark' }
+};
 
-  const data = rows.slice(-40).map(r => r.daya);
-  const max = Math.max(...data, 10);
-  const min = 0;
-  const stepX = w / (data.length - 1);
+chart = new ApexCharts(document.getElementById("trend"), chartOptions);
+chart.render();
 
-  ctx.beginPath();
-  ctx.lineWidth = 2 * devicePixelRatio;
-  ctx.strokeStyle = "#ffb02e";
-  ctx.shadowColor = "rgba(255,176,46,.5)";
-  ctx.shadowBlur = 8;
-  data.forEach((val, i) => {
-    const x = i * stepX;
-    const y = h - ((val - min) / (max - min)) * (h * 0.85) - (h * 0.05);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
-  ctx.stroke();
 
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = "rgba(255,255,255,.06)";
-  ctx.lineWidth = 1;
-  for (let i = 1; i < 4; i++) {
-    const y = (h / 4) * i;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-  }
-}
